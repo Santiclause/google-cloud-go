@@ -146,6 +146,9 @@ type SubscriptionConfig struct {
 	// Defaults to 7 days. Cannot be longer than 7 days or shorter than 10 minutes.
 	RetentionDuration time.Duration
 
+	// How long before the subscription is deleted for inactivity.
+	ExpirationDuration time.Duration
+
 	// The set of labels for the subscription.
 	Labels map[string]string
 }
@@ -162,6 +165,12 @@ func (cfg *SubscriptionConfig) toProto(name string) *pb.Subscription {
 	if cfg.RetentionDuration != 0 {
 		retentionDuration = ptypes.DurationProto(cfg.RetentionDuration)
 	}
+	var expirationPolicy *pb.ExpirationPolicy
+	if cfg.ExpirationDuration != 0 {
+		expirationPolicy = &pb.ExpirationPolicy{
+			Ttl: ptypes.DurationProto(cfg.ExpirationDuration),
+		}
+	}
 	return &pb.Subscription{
 		Name:                     name,
 		Topic:                    cfg.Topic.name,
@@ -169,6 +178,7 @@ func (cfg *SubscriptionConfig) toProto(name string) *pb.Subscription {
 		AckDeadlineSeconds:       trunc32(int64(cfg.AckDeadline.Seconds())),
 		RetainAckedMessages:      cfg.RetainAckedMessages,
 		MessageRetentionDuration: retentionDuration,
+		ExpirationPolicy:         expirationPolicy,
 		Labels:                   cfg.Labels,
 	}
 }
